@@ -30,8 +30,6 @@ put key a ((Cache { entries, maxSize, ordering }) as cache) =
 
         updatedOrdering =
             LinkedList.push key ordering
-
-        aaa = Debug.log "order " updatedOrdering
     in
         if (Dict.size updatedEntries) <= maxSize then
             Cache { entries = updatedEntries, maxSize = maxSize, ordering = updatedOrdering }
@@ -44,9 +42,7 @@ put key a ((Cache { entries, maxSize, ordering }) as cache) =
                     Dict.remove lruKey updatedEntries
 
                 orderingWithoutLru =
-                    LinkedList.remove lruKey ordering
-
-                aaa = Debug.log "without " orderingWithoutLru
+                    LinkedList.remove lruKey updatedOrdering
             in
                 Cache { entries = entriesWithoutLru, maxSize = maxSize, ordering = orderingWithoutLru }
 

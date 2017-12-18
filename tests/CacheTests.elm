@@ -64,8 +64,6 @@ suite =
             , test "Multiple evictions work" <|
                 \_ ->
                     let
-                        aaa = Debug.log "===============================" ""
-
                         expected =
                             Dict.empty
                                 |> Dict.insert "d" 4
@@ -76,6 +74,27 @@ suite =
                                 |> Cache.put "a" 1
                                 |> Cache.put "b" 2
                                 |> Cache.put "c" 3
+                                |> Cache.put "d" 4
+                                |> Cache.put "e" 5
+                                |> Cache.toDict
+                    in
+                        Expect.equalDicts expected actual
+            , test "Get bumps to the front and changes lru" <|
+                \_ ->
+                    let
+                        expected =
+                            Dict.empty
+                                |> Dict.insert "a" 1
+                                |> Dict.insert "d" 4
+                                |> Dict.insert "e" 5
+
+                        actual =
+                            Cache.newCache 3
+                                |> Cache.put "a" 1
+                                |> Cache.put "b" 2
+                                |> Cache.put "c" 3
+                                |> Cache.get "a"
+                                |> Tuple.first
                                 |> Cache.put "d" 4
                                 |> Cache.put "e" 5
                                 |> Cache.toDict

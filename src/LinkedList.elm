@@ -212,7 +212,7 @@ remove a ((LinkedList { firstAndLast, nodes, size }) as list) =
                                             -- It must not have been the first or last item
                                             LinkedList
                                                 { firstAndLast = Just ( first, last )
-                                                , size = size
+                                                , size = size - 1
                                                 , nodes =
                                                     nodes
                                                         |> Dict.insert previousLinkKey (Link { previous = linkPrevious previousLink, next = Just nextLinkKey, value = previousLinkKey })
