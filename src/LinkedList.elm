@@ -34,6 +34,16 @@ linkNext (Link { next }) =
     next
 
 
+linkPrevious : Link -> Maybe String
+linkPrevious (Link { previous }) =
+    previous
+
+
+has : String -> LinkedList -> Bool
+has a (LinkedList { nodes }) =
+    Dict.member a nodes
+
+
 type LinkedListError
     = NodeNotInList
 
@@ -41,6 +51,26 @@ type LinkedListError
 isEmpty : LinkedList -> Bool
 isEmpty list =
     size list == 0
+
+
+first : LinkedList -> Maybe String
+first (LinkedList { firstAndLast }) =
+    case firstAndLast of
+        Nothing ->
+            Nothing
+
+        Just ( first, _ ) ->
+            Just first
+
+
+last : LinkedList -> Maybe String
+last (LinkedList { firstAndLast }) =
+    case firstAndLast of
+        Nothing ->
+            Nothing
+
+        Just ( last, _ ) ->
+            Just last
 
 
 size : LinkedList -> Int
@@ -90,71 +120,120 @@ toListHelper currentKey ((LinkedList { nodes }) as list) accumulation =
                 toListHelper value list newAccumulation
 
 
-push : String -> LinkedList -> LinkedList
-push a ((LinkedList { firstAndLast, nodes, size }) as list) =
+remove : String -> LinkedList -> LinkedList
+remove a ((LinkedList { firstAndLast, nodes, size }) as list) =
     case firstAndLast of
         Nothing ->
-            -- Nothing is in the list at all. Set this new item to the head, last and
-            -- add an entry for it in the nodes map to denote it has no siblings.
-            LinkedList
-                { firstAndLast = Just ( a, a )
-                , size = size + 1
-                , nodes = Dict.insert a (Link { previous = Nothing, next = Nothing, value = a }) nodes
-                }
+            list
 
         Just ( first, last ) ->
             let
-                originalFirstLink =
-                    unsafeGetLink first list
-
-                newLink =
-                    (Link { previous = Nothing, next = Just (linkValue originalFirstLink), value = a })
+                linkMaybe =
+                    Dict.get a nodes
             in
+                case linkMaybe of
+                    Nothing ->
+                        -- That key wasn't even in this list
+                        list
+
+                    Just link ->
+                        -- The key is in the list
+                        case linkPrevious link of
+                            Nothing ->
+                                -- If there was no previous link to this item...
+                                case linkNext link of
+                                    Nothing ->
+                                        -- AND no next link, it must have been the only thing in the list
+                                        LinkedList { firstAndLast = Nothing, size = 0, nodes = Dict.empty }
+
+                                    Just nextLinkKey ->
+                                        let
+                                            nextLink =
+                                                unsafeGetLink nextLinkKey list
+                                        in
+                                            -- BUT it has a next, it must have been the head. Leave the last alone, set
+                                            -- that next link to the new head.
+                                            LinkedList
+                                                { firstAndLast = Just ( nextLinkKey, last )
+                                                , size = size - 1
+                                                , nodes =
+                                                    nodes
+                                                        |> Dict.remove a
+                                                        |> Dict.insert nextLinkKey (Link { previous = Nothing, next = linkNext nextLink, value = linkValue nextLink })
+                                                }
+
+                            Just previousLinkKey ->
+                                -- If there is a previous link...
+                                case linkNext link of
+                                    Nothing ->
+                                        -- AND there is no next, then this must be the last item
+                                        let
+                                            previousLink =
+                                                unsafeGetLink previousLinkKey list
+                                        in
+                                            LinkedList
+                                                { firstAndLast = Just ( first, previousLinkKey )
+                                                , size = size - 1
+                                                , nodes =
+                                                    nodes
+                                                        |> Dict.insert previousLinkKey (Link { previous = linkPrevious previousLink, next = Nothing, value = previousLinkKey })
+                                                        |> Dict.remove a
+                                                }
+
+                                    Just nextLinkKey ->
+                                        let
+                                            nextLink =
+                                                unsafeGetLink nextLinkKey list
+
+                                            previousLink =
+                                                unsafeGetLink previousLinkKey list
+                                        in
+                                            -- AND there is a next, then this item has two siblings and they need to point to each other.
+                                            -- It must not have been the first or last item
+                                            LinkedList
+                                                { firstAndLast = Just ( first, last )
+                                                , size = size
+                                                , nodes =
+                                                    nodes
+                                                        |> Dict.insert previousLinkKey (Link { previous = linkPrevious previousLink, next = Just nextLinkKey, value = previousLinkKey })
+                                                        |> Dict.insert nextLinkKey (Link { previous = Just previousLinkKey, next = linkNext nextLink, value = nextLinkKey })
+                                                        |> Dict.remove a
+                                                }
+
+
+push : String -> LinkedList -> LinkedList
+push a list =
+    let
+        -- If a is already in the list then remove it
+        ((LinkedList { firstAndLast, nodes, size }) as listToUse) =
+            if has a list then
+                (remove a list)
+            else
+                list
+    in
+        case firstAndLast of
+            Nothing ->
+                -- Nothing is in the list at all. Set this new item to the head, last and
+                -- add an entry for it in the nodes map to denote it has no siblings.
                 LinkedList
-                    { firstAndLast = Just ( a, last )
+                    { firstAndLast = Just ( a, a )
                     , size = size + 1
-                    , nodes =
-                        nodes
-                            |> Dict.insert a newLink
-                            |> Dict.insert (linkValue originalFirstLink) (Link { previous = Just (linkValue newLink), next = linkNext originalFirstLink, value = a })
+                    , nodes = Dict.insert a (Link { previous = Nothing, next = Nothing, value = a }) nodes
                     }
 
+            Just ( first, last ) ->
+                let
+                    originalFirstLink =
+                        unsafeGetLink first listToUse
 
-
---list
--- We have at least a head node
---    case size of
---        0 ->
---            LinkedList
---                { head = Just a
---                , last = Just a
---                , size = 1
---                , nodes = Dict.insert a (Link { previous = Nothing, next = Nothing, value = a }) nodes
---                }
---
---        1 ->
---            let
---                currentHeadLink =
---                    Maybe.withDefault emptyLink (Dict.get head nodes)
---            in
---                LinkedList
---                    { head = Just a
---                    , last = last
---                    , size = 2
---                    , nodes = Dict.insert a (Link { previous = Nothing, next = currentHeadLink, value = a }) nodes
---                    }
-
-
-next : LinkedList -> String -> Result LinkedListError (Maybe String)
-next (LinkedList { nodes }) a =
-    case Dict.get a nodes of
-        Just (Link { next }) ->
-            case next of
-                Nothing ->
-                    Ok Nothing
-
-                Just value ->
-                    Ok <| Just value
-
-        Nothing ->
-            Err NodeNotInList
+                    newLink =
+                        (Link { previous = Nothing, next = Just (linkValue originalFirstLink), value = a })
+                in
+                    LinkedList
+                        { firstAndLast = Just ( a, last )
+                        , size = size + 1
+                        , nodes =
+                            nodes
+                                |> Dict.insert a newLink
+                                |> Dict.insert (linkValue originalFirstLink) (Link { previous = Just (linkValue newLink), next = linkNext originalFirstLink, value = a })
+                        }
