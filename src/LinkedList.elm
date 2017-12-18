@@ -63,6 +63,16 @@ first (LinkedList { firstAndLast }) =
             Just first
 
 
+unsafeLast : LinkedList -> String
+unsafeLast (LinkedList { firstAndLast }) =
+    case firstAndLast of
+        Nothing ->
+            "~~NOTHING~~"
+
+        Just ( _ , last ) ->
+            last
+
+
 last : LinkedList -> Maybe String
 last (LinkedList { firstAndLast }) =
     case firstAndLast of
@@ -118,6 +128,16 @@ toListHelper currentKey ((LinkedList { nodes }) as list) accumulation =
 
             Just value ->
                 toListHelper value list newAccumulation
+
+
+removeLast : LinkedList -> LinkedList
+removeLast ((LinkedList { firstAndLast }) as list) =
+    case firstAndLast of
+        Nothing ->
+            list
+
+        Just ( _, last ) ->
+            remove last list
 
 
 remove : String -> LinkedList -> LinkedList
