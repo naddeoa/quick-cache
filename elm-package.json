@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
-    "summary": "A simple, least recently used (LRU) cache with O(1) get, put and remove operations",
-    "repository": "https://github.com/user/project.git",
+    "summary": "A simple, LRU cache with O(1) get, put and remove operations",
+    "repository": "https://github.com/naddeoa/quick-cache.git",
     "license": "BSD3",
     "source-directories": [
         ".",

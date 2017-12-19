@@ -1,8 +1,4 @@
-module Cache exposing (..)
-
-import Dict exposing (Dict)
-import LinkedList exposing (LinkedList)
-
+module Cache exposing (newCache, toDict, put, get, remove)
 
 {-| A simple, least recently used (LRU) cache with O(1) get, put and remove operations.
 
@@ -27,6 +23,11 @@ comparable you'll have to use `String` as keys for now.
 
 @docs newCache, toDict, get, put, remove
 -}
+
+import Dict exposing (Dict)
+import LinkedList exposing (LinkedList)
+
+
 type Cache a
     = Cache
         { entries : Dict String a
